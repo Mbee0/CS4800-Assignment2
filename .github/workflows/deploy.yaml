@@ -19,6 +19,6 @@ jobs:
             cd /home/ubuntu/CS4800-Assignment2
             git pull origin main
             cd backend
-            source .venv/bin/activate
+            source env/bin/activate
             pip install -r requirements.txt
             sudo systemctl restart recipeapp
