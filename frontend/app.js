@@ -65,18 +65,60 @@ function renderGrid() {
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
-      <div class="cardTop">
-        <h3 class="cardTitle"></h3>
-        <div class="cardTime"></div>
-      </div>
-      <p class="cardDesc"></p>
+        <div class="cardTop">
+            <div class="cardTopLeft">
+                <h3 class="cardTitle"></h3>
+                <div class="cardTime"></div>
+            </div>
+
+            <button class="starBtn" aria-label="Star recipe" title="Star">
+                <span class="starIcon"></span>
+            </button>
+        </div>
+        <p class="cardDesc"></p>
     `;
 
         card.querySelector(".cardTitle").textContent = r.name || "(Untitled)";
         card.querySelector(".cardTime").textContent = minutesToLabel(r.durationMinutes);
         card.querySelector(".cardDesc").textContent = r.description || "";
 
+        const starBtn = card.querySelector(".starBtn");
+        const starIcon = card.querySelector(".starIcon");
+
+        function renderStar() {
+            starIcon.textContent = r.starred ? "★" : "☆";
+            starBtn.classList.toggle("starred", !!r.starred);
+        }
+        renderStar();
+
+        // Clicking the STAR should not open edit modal
+        starBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const next = !r.starred;
+            try {
+                // Option 1: PATCH toggle endpoint (recommended)
+                const res = await fetch(`/api/recipes/${r.id}/star`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ starred: next })
+                });
+                if (!res.ok) throw new Error("Failed to star");
+                const updated = await res.json();
+
+                // Update local list
+                const idx = recipes.findIndex(x => x.id === r.id);
+                if (idx !== -1) recipes[idx] = updated;
+
+                recipes.sort((a, b) => (b.starred === true) - (a.starred === true));
+                // Re-render (simple + reliable)
+                renderGrid();
+            } catch (err) {
+                alert(err.message || "Could not update star");
+            }
+        });
         card.addEventListener("click", () => openEditModal(r));
+
+        // Add card to grid
         grid.appendChild(card);
     }
 }
@@ -283,6 +325,7 @@ async function init() {
 
     // Load recipes
     recipes = await apiGetRecipes();
+    recipes.sort((a, b) => (b.starred === true) - (a.starred === true));
     renderGrid();
 }
 

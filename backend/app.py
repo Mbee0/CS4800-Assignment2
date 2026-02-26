@@ -34,6 +34,7 @@ def recipe_doc_to_json(doc):
         "durationMinutes": int(doc.get("durationMinutes", 0)),
         "ingredients": doc.get("ingredients", []),
         "steps": doc.get("steps", []),
+        "starred": bool(doc.get("starred", False)),  # ✅ add this
         "createdAt": doc.get("createdAt"),
         "updatedAt": doc.get("updatedAt"),
     }
@@ -69,6 +70,7 @@ def create_recipe():
     duration_minutes = data.get("durationMinutes", 0)
     ingredients = data.get("ingredients") or []
     steps = data.get("steps") or []
+    starred = bool(data.get("starred", False))
 
     if not name:
         return jsonify({"error": "name is required"}), 400
@@ -94,6 +96,7 @@ def create_recipe():
         "steps": steps,
         "createdAt": now,
         "updatedAt": now,
+        "starred": starred,
     }
 
     result = recipes_col.insert_one(doc)
@@ -114,6 +117,7 @@ def update_recipe(recipe_id):
     duration_minutes = data.get("durationMinutes", 0)
     ingredients = data.get("ingredients") or []
     steps = data.get("steps") or []
+    starred = bool(data.get("starred", False))
 
     if not name:
         return jsonify({"error": "name is required"}), 400
@@ -138,10 +142,28 @@ def update_recipe(recipe_id):
             "ingredients": ingredients,
             "steps": steps,
             "updatedAt": now,
+            "starred": starred,
         }
     }
 
     res = recipes_col.update_one({"_id": oid}, update)
+    if res.matched_count == 0:
+        return jsonify({"error": "not found"}), 404
+
+    doc = recipes_col.find_one({"_id": oid})
+    return jsonify(recipe_doc_to_json(doc)), 200
+
+@app.patch("/api/recipes/<recipe_id>/star")
+def toggle_star(recipe_id):
+    try:
+        oid = ObjectId(recipe_id)
+    except Exception:
+        return jsonify({"error": "invalid id"}), 400
+
+    data = request.get_json(silent=True) or {}
+    starred = bool(data.get("starred", False))
+
+    res = recipes_col.update_one({"_id": oid}, {"$set": {"starred": starred}})
     if res.matched_count == 0:
         return jsonify({"error": "not found"}), 404
 
