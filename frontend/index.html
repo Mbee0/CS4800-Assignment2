@@ -18,8 +18,29 @@
     </header>
 
     <main class="container">
-        <section id="grid" class="grid"></section>
-        <p id="emptyState" class="empty hidden">No recipes yet. Click “New Recipe” to add one.</p>
+        <section class="section">
+            <div class="sectionHeader">
+                <h2 class="sectionTitle">⭐ Starred Recipes</h2>
+                <p class="sectionSub">Your favorites live up here.</p>
+            </div>
+
+            <section id="favGrid" class="grid"></section>
+            <p id="favEmpty" class="empty hidden">No starred recipes yet. Star one to pin it up here ✨</p>
+        </section>
+
+        <div id="dividerWrap" class="dividerWrap hidden">
+            <div class="dividerLine"></div>
+        </div>
+
+        <section class="section">
+            <div class="sectionHeader">
+                <h2 class="sectionTitle">All Recipes</h2>
+                <p class="sectionSub">Everything you’ve saved.</p>
+            </div>
+
+            <section id="allGrid" class="grid"></section>
+            <p id="allEmpty" class="empty hidden">No recipes yet. Click “New Recipe” to add one.</p>
+        </section>
     </main>
 
     <!-- Modal -->

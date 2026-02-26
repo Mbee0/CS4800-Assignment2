@@ -373,3 +373,63 @@ body {
 .hidden {
     display: none !important;
 }
+
+.section {
+    margin-top: 14px;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 14px 4px 10px;
+    flex-wrap: wrap;
+}
+
+.sectionTitle {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.2px;
+}
+
+.sectionSub {
+    margin: 0;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 13.5px;
+}
+
+/* Divider: half-width, centered, pink halo */
+.dividerWrap {
+    display: flex;
+    justify-content: center;
+    margin: 22px 0 10px;
+}
+
+.dividerLine {
+    width: 50%;
+    /* half the screen width */
+    max-width: 520px;
+    /* keeps it cute on wide screens */
+    min-width: 240px;
+    /* still visible on small screens */
+    height: 2px;
+    border-radius: 999px;
+    margin-top: 10px;
+
+    /* soft pink gradient */
+    background: linear-gradient(90deg,
+            rgba(255, 111, 177, 0) 0%,
+            rgba(255, 111, 177, 0.55) 25%,
+            rgba(255, 111, 177, 0.85) 50%,
+            rgba(255, 111, 177, 0.55) 75%,
+            rgba(255, 111, 177, 0) 100%);
+
+    /* halo glow */
+    box-shadow:
+        0 0 10px rgba(255, 111, 177, 0.35),
+        0 0 22px rgba(255, 111, 177, 0.22),
+        0 0 38px rgba(255, 111, 177, 0.14);
+}

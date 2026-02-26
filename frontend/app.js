@@ -51,31 +51,42 @@ function show(el) { el.classList.remove("hidden"); }
 function hide(el) { el.classList.add("hidden"); }
 
 function renderGrid() {
-    const grid = qs("grid");
-    const empty = qs("emptyState");
-    grid.innerHTML = "";
+    const favGrid = qs("favGrid");
+    const allGrid = qs("allGrid");
+    const favEmpty = qs("favEmpty");
+    const allEmpty = qs("allEmpty");
+    const dividerWrap = qs("dividerWrap");
 
-    if (!recipes.length) {
-        show(empty);
-        return;
-    }
-    hide(empty);
+    favGrid.innerHTML = "";
+    allGrid.innerHTML = "";
 
-    for (const r of recipes) {
+    const favorites = recipes.filter(r => r.starred === true);
+    const others = recipes.filter(r => r.starred !== true);
+
+    // Show/hide empty states + divider
+    if (favorites.length === 0) show(favEmpty); else hide(favEmpty);
+    if (recipes.length === 0) show(allEmpty); else hide(allEmpty);
+
+    if (favorites.length > 0 && others.length > 0) show(dividerWrap);
+    else hide(dividerWrap);
+
+    // helper to build one card
+    function makeCard(r, parentGrid) {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
-        <div class="cardTop">
-            <div class="cardTopLeft">
-                <h3 class="cardTitle"></h3>
-                <div class="cardTime"></div>
-            </div>
 
-            <button class="starBtn" aria-label="Star recipe" title="Star">
-                <span class="starIcon"></span>
-            </button>
+        card.innerHTML = `
+      <div class="cardTop">
+        <div class="cardTopLeft">
+          <h3 class="cardTitle"></h3>
+          <div class="cardTime"></div>
         </div>
-        <p class="cardDesc"></p>
+
+        <button class="starBtn" aria-label="Star recipe" title="Star">
+          <span class="starIcon"></span>
+        </button>
+      </div>
+      <p class="cardDesc"></p>
     `;
 
         card.querySelector(".cardTitle").textContent = r.name || "(Untitled)";
@@ -91,36 +102,42 @@ function renderGrid() {
         }
         renderStar();
 
-        // Clicking the STAR should not open edit modal
+        // Star click should NOT open edit modal
         starBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
             const next = !r.starred;
+
             try {
-                // Option 1: PATCH toggle endpoint (recommended)
                 const res = await fetch(`/api/recipes/${r.id}/star`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ starred: next })
+                    body: JSON.stringify({ starred: next }),
                 });
-                if (!res.ok) throw new Error("Failed to star");
+                if (!res.ok) throw new Error("Failed to update star");
                 const updated = await res.json();
 
-                // Update local list
+                // Update local
                 const idx = recipes.findIndex(x => x.id === r.id);
                 if (idx !== -1) recipes[idx] = updated;
 
-                recipes.sort((a, b) => (b.starred === true) - (a.starred === true));
-                // Re-render (simple + reliable)
+                // Re-render with new groups
                 renderGrid();
             } catch (err) {
                 alert(err.message || "Could not update star");
             }
         });
+
+        // Card click opens edit modal
         card.addEventListener("click", () => openEditModal(r));
 
-        // Add card to grid
-        grid.appendChild(card);
+        parentGrid.appendChild(card);
     }
+
+    // Render favorite cards first
+    for (const r of favorites) makeCard(r, favGrid);
+
+    // Render the rest
+    for (const r of others) makeCard(r, allGrid);
 }
 
 function clearForm() {
@@ -325,7 +342,6 @@ async function init() {
 
     // Load recipes
     recipes = await apiGetRecipes();
-    recipes.sort((a, b) => (b.starred === true) - (a.starred === true));
     renderGrid();
 }
 
