@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 
-load_dotenv()
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "myapp")
