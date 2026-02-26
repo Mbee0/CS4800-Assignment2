@@ -1,56 +1,152 @@
 from flask import Flask, jsonify, request, render_template
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
+from datetime import datetime
 
 load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "myapp")
-COLLECTION_NAME = os.getenv("COLLECTION_NAME", "items")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "recipes")
 
 if not MONGO_URI:
     raise RuntimeError("Missing MONGO_URI. Create backend/.env with your MongoDB Atlas connection string.")
 
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
-items_col = db[COLLECTION_NAME]
+recipes_col = db[COLLECTION_NAME]
 
-# IMPORTANT: your index.html, styles.css, app.js are in ../frontend
+# Frontend lives in ../frontend
 app = Flask(
     __name__,
     template_folder="../frontend",
     static_folder="../frontend",
-    static_url_path=""  # makes /styles.css and /app.js work
+    static_url_path=""
 )
+
+def recipe_doc_to_json(doc):
+    return {
+        "id": str(doc["_id"]),
+        "name": doc.get("name", ""),
+        "description": doc.get("description", ""),
+        "durationMinutes": int(doc.get("durationMinutes", 0)),
+        "ingredients": doc.get("ingredients", []),
+        "steps": doc.get("steps", []),
+        "createdAt": doc.get("createdAt"),
+        "updatedAt": doc.get("updatedAt"),
+    }
 
 @app.get("/")
 def home():
     return render_template("index.html")
 
+@app.get("/api/recipes")
+def get_recipes():
+    docs = recipes_col.find().sort("updatedAt", -1)
+    recipes = [recipe_doc_to_json(d) for d in docs]
+    return jsonify(recipes), 200
 
-@app.get("/api/items")
-def get_items():
-    items = []
-    for doc in items_col.find().sort("_id", -1):
-        items.append({
-            "id": str(doc["_id"]),
-            "text": doc.get("text", "")
-        })
-    return jsonify(items), 200
+@app.get("/api/recipes/<recipe_id>")
+def get_recipe(recipe_id):
+    try:
+        oid = ObjectId(recipe_id)
+    except Exception:
+        return jsonify({"error": "invalid id"}), 400
 
+    doc = recipes_col.find_one({"_id": oid})
+    if not doc:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(recipe_doc_to_json(doc)), 200
 
-@app.post("/api/items")
-def create_item():
+@app.post("/api/recipes")
+def create_recipe():
     data = request.get_json(silent=True) or {}
-    text = (data.get("text") or "").strip()
 
-    if not text:
-        return jsonify({"error": "text is required"}), 400
+    name = (data.get("name") or "").strip()
+    description = (data.get("description") or "").strip()
+    duration_minutes = data.get("durationMinutes", 0)
+    ingredients = data.get("ingredients") or []
+    steps = data.get("steps") or []
 
-    result = items_col.insert_one({"text": text})
-    return jsonify({"id": str(result.inserted_id), "text": text}), 201
+    if not name:
+        return jsonify({"error": "name is required"}), 400
 
+    try:
+        duration_minutes = int(duration_minutes)
+        if duration_minutes < 0:
+            duration_minutes = 0
+    except Exception:
+        duration_minutes = 0
+
+    # Clean lists
+    ingredients = [str(x).strip() for x in ingredients if str(x).strip()]
+    steps = [str(x).strip() for x in steps if str(x).strip()]
+
+    now = datetime.utcnow().isoformat() + "Z"
+
+    doc = {
+        "name": name,
+        "description": description,
+        "durationMinutes": duration_minutes,
+        "ingredients": ingredients,
+        "steps": steps,
+        "createdAt": now,
+        "updatedAt": now,
+    }
+
+    result = recipes_col.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return jsonify(recipe_doc_to_json(doc)), 201
+
+@app.put("/api/recipes/<recipe_id>")
+def update_recipe(recipe_id):
+    try:
+        oid = ObjectId(recipe_id)
+    except Exception:
+        return jsonify({"error": "invalid id"}), 400
+
+    data = request.get_json(silent=True) or {}
+
+    name = (data.get("name") or "").strip()
+    description = (data.get("description") or "").strip()
+    duration_minutes = data.get("durationMinutes", 0)
+    ingredients = data.get("ingredients") or []
+    steps = data.get("steps") or []
+
+    if not name:
+        return jsonify({"error": "name is required"}), 400
+
+    try:
+        duration_minutes = int(duration_minutes)
+        if duration_minutes < 0:
+            duration_minutes = 0
+    except Exception:
+        duration_minutes = 0
+
+    ingredients = [str(x).strip() for x in ingredients if str(x).strip()]
+    steps = [str(x).strip() for x in steps if str(x).strip()]
+
+    now = datetime.utcnow().isoformat() + "Z"
+
+    update = {
+        "$set": {
+            "name": name,
+            "description": description,
+            "durationMinutes": duration_minutes,
+            "ingredients": ingredients,
+            "steps": steps,
+            "updatedAt": now,
+        }
+    }
+
+    res = recipes_col.update_one({"_id": oid}, update)
+    if res.matched_count == 0:
+        return jsonify({"error": "not found"}), 404
+
+    doc = recipes_col.find_one({"_id": oid})
+    return jsonify(recipe_doc_to_json(doc)), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host="127.0.0.1", port=5000)

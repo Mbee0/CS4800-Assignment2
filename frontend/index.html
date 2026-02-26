@@ -4,23 +4,76 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Mongo Items</title>
-    <link rel="stylesheet" href="/styles.css">
+    <title>Recipe Holder</title>
+    <link rel="stylesheet" href="/styles.css" />
 </head>
 
 <body>
+    <header class="topbar">
+        <div class="brand">
+            <h1>Recipe Holder</h1>
+            <p class="sub">Save recipes with ingredients, steps, time, and notes.</p>
+        </div>
+        <button id="newRecipeBtn" class="btn primary">+ New Recipe</button>
+    </header>
+
     <main class="container">
-        <h1>Items</h1>
-
-        <form id="itemForm" class="row">
-            <input id="textInput" type="text" placeholder="Add an item..." autocomplete="off" />
-            <button type="submit">Add</button>
-        </form>
-
-        <ul id="itemsList"></ul>
-
-        <p class="hint">Backend: Flask • DB: MongoDB Atlas</p>
+        <section id="grid" class="grid"></section>
+        <p id="emptyState" class="empty hidden">No recipes yet. Click “New Recipe” to add one.</p>
     </main>
+
+    <!-- Modal -->
+    <div id="modalBackdrop" class="backdrop hidden">
+        <div class="modal" role="dialog" aria-modal="true">
+            <div class="modalHeader">
+                <h2 id="modalTitle">New Recipe</h2>
+                <button id="closeModalBtn" class="iconBtn" aria-label="Close">✕</button>
+            </div>
+
+            <div class="modalBody">
+                <div class="row">
+                    <label class="label">Dish name</label>
+                    <input id="nameInput" class="input" type="text" placeholder="e.g., Chicken Alfredo" />
+                </div>
+
+                <div class="row">
+                    <label class="label">Short description</label>
+                    <input id="descInput" class="input" type="text"
+                        placeholder="e.g., Creamy pasta with garlic and parmesan" />
+                </div>
+
+                <div class="row two">
+                    <div>
+                        <label class="label">Hours</label>
+                        <input id="hoursInput" class="input" type="number" min="0" placeholder="0" />
+                    </div>
+                    <div>
+                        <label class="label">Minutes</label>
+                        <input id="minsInput" class="input" type="number" min="0" placeholder="30" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <label class="label">Ingredients (type and press Enter)</label>
+                    <input id="ingredientEntry" class="input" type="text" placeholder="e.g., 2 cloves garlic" />
+                    <div id="ingredientsChips" class="chips"></div>
+                </div>
+
+                <div class="row">
+                    <label class="label">Steps (type step, press Enter for next)</label>
+                    <div id="stepsList" class="steps"></div>
+                    <button id="addStepBtn" class="btn">+ Add Step</button>
+                </div>
+
+                <div class="actions">
+                    <button id="saveBtn" class="btn primary">Save Recipe</button>
+                    <button id="cancelBtn" class="btn">Cancel</button>
+                </div>
+
+                <p id="formError" class="error hidden"></p>
+            </div>
+        </div>
+    </div>
 
     <script src="/app.js"></script>
 </body>
